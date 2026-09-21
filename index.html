@@ -5112,10 +5112,16 @@ if ('serviceWorker' in navigator) {
       const existing=await findBackup(folderId);
       const payload=JSON.stringify(localPayload(),null,2);
       const boundary='upiPosCloudBoundary'+Date.now();
-      const meta={name:BACKUP_NAME,mimeType:'application/json',parents:[folderId]};
+      // Drive API: parents may be supplied when creating a file, but not as a
+      // writable field in an update/PATCH request. Existing backups stay in
+      // their current folder; only new backups receive the folder parent.
+      const meta=existing
+        ? {name:BACKUP_NAME,mimeType:'application/json'}
+        : {name:BACKUP_NAME,mimeType:'application/json',parents:[folderId]};
       const body='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(meta)+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+payload+'\r\n--'+boundary+'--';
       const url=existing?'https://www.googleapis.com/upload/drive/v3/files/'+encodeURIComponent(existing.id)+'?uploadType=multipart&fields=id,name,modifiedTime':'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime';
       const res=await api(url,{method:existing?'PATCH':'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body});
+      if(!res?.id) throw new Error('Google Drive did not return a backup file ID.');
       save(FILE_KEY,res.id);save(LAST_KEY,new Date().toISOString());clearPending();
       setStatus('✅ Cloud backup saved','connected');showConnected();
       return res;
