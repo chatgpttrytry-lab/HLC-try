@@ -23,7 +23,7 @@ html,body{width:100%;height:100%;overflow:hidden}body{background:var(--bg);color
 .qr-section{padding:4px 18px 8px;display:flex;justify-content:center;flex:none}.qr-card{width:100%;background:var(--blue2);border:1px solid color-mix(in srgb,var(--blue) 18%,transparent);border-radius:22px;padding:12px 16px 10px;display:flex;flex-direction:column;align-items:center;gap:7px}.qr-box{background:#fff;padding:8px;border-radius:14px;line-height:0}.qr-box canvas,.qr-box img{width:128px!important;height:128px!important}.amount-display{font-size:23px;font-weight:700;color:var(--blue)}
 .config-section{padding:0 18px;display:grid;gap:8px;flex:none}.input-group{height:46px;position:relative}.input-group label{position:absolute;left:14px;top:-7px;background:var(--surface);padding:0 5px;font-size:10px;color:var(--muted);font-weight:600;z-index:1}.input-group input{width:100%;height:46px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);padding:0 82px 0 14px;font-size:15px;outline:0}.input-actions{position:absolute;right:8px;top:7px;display:flex;gap:4px}.input-actions .save-icon{position:static;width:32px;height:32px}.qr-select-btn{font-size:18px}.input-group input:focus{border-color:var(--blue);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 12%,transparent)}.save-icon{position:absolute;right:8px;top:7px;width:32px;height:32px;border:0;border-radius:10px;background:var(--blue2);color:var(--blue);font-size:17px}
 .display-container{padding:8px 22px 3px;text-align:right;display:flex;flex-direction:column;justify-content:flex-end;min-height:72px;flex:1}.expression{font-size:30px;font-weight:500;white-space:normal;overflow-x:hidden;overflow-y:auto;overflow-wrap:anywhere;word-break:break-word;line-height:1.08;max-height:92px;min-height:34px;color:var(--text);scrollbar-width:thin}.result-preview{font-size:15px;color:var(--muted);min-height:18px;margin-top:2px}
-.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:8px 18px 10px;flex:none}.btn{border:0;outline:0;border-radius:16px;height:clamp(48px,7.5vh,60px);font-size:22px;font-weight:600;cursor:pointer;color:var(--text);background:var(--surface2);transition:transform .08s,filter .15s}.btn:active{transform:scale(.95)}.btn-func{background:var(--surface2);color:var(--blue)}.btn-op{background:var(--blue2);color:var(--blue);font-size:27px}.btn-eq{background:var(--blue);color:#fff;font-size:27px}.share-btn{grid-column:span 4;height:42px;border-radius:14px;background:var(--surface2);color:var(--blue);font-size:14px}.calculator-58mm-print-btn{background:var(--blue2);color:var(--blue);display:flex;align-items:center;justify-content:center;gap:4px;font-size:20px}.calculator-58mm-print-btn span{font-size:10px;font-weight:900;line-height:1}.footer-text{text-align:center;font-size:9px;color:var(--muted);padding:0 0 8px;flex:none}
+.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:8px 18px 10px;flex:none}.btn{border:0;outline:0;border-radius:16px;height:clamp(48px,7.5vh,60px);font-size:22px;font-weight:600;cursor:pointer;color:var(--text);background:var(--surface2);transition:transform .08s,filter .15s}.btn:active{transform:scale(.95)}.btn-func{background:var(--surface2);color:var(--blue)}.btn-op{background:var(--blue2);color:var(--blue);font-size:27px}.btn-eq{background:var(--blue);color:#fff;font-size:27px;transition:transform .08s,filter .15s,background .18s,box-shadow .18s}.btn-eq.save-success{background:#16a34a!important;color:#fff;box-shadow:0 0 0 3px rgba(22,163,74,.18),0 6px 18px rgba(22,163,74,.28)}.btn-eq.save-success:active{transform:scale(.95)}.share-btn{grid-column:span 4;height:42px;border-radius:14px;background:var(--surface2);color:var(--blue);font-size:14px}.calculator-58mm-print-btn{background:var(--blue2);color:var(--blue);display:flex;align-items:center;justify-content:center;gap:4px;font-size:20px;transition:transform .08s,filter .15s,background .18s,box-shadow .18s}.calculator-58mm-print-btn.print-success{background:#16a34a!important;color:#fff;box-shadow:0 0 0 3px rgba(22,163,74,.18),0 6px 18px rgba(22,163,74,.28)}.calculator-58mm-print-btn.print-busy{opacity:.8;pointer-events:none}.calculator-58mm-print-btn span{font-size:10px;font-weight:900;line-height:1}.footer-text{text-align:center;font-size:9px;color:var(--muted);padding:0 0 8px;flex:none}
 @media(max-height:680px){.qr-box canvas,.qr-box img{width:105px!important;height:105px!important}.qr-card{padding:8px}.qr-section{padding-bottom:5px}.topbar{height:45px}.keypad{gap:6px}.btn{height:43px}.display-container{min-height:58px}.share-btn{height:35px}}
 
 .top-actions{display:flex;align-items:center;gap:7px}
@@ -178,6 +178,7 @@ button.touch-ripple{position:relative;overflow:hidden;}
 }
 
 
+</style>
 <style>
 .billing-credit-card-details{margin-top:8px;padding:9px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}
 .billing-cc-detail+.billing-cc-detail{margin-top:8px}
@@ -208,6 +209,7 @@ button.touch-ripple{position:relative;overflow:hidden;}
 .billing-new-item-hint{margin-top:11px;padding:9px 10px;border-radius:10px;background:var(--surface2,#f7f8fa);font-size:9px;color:var(--muted,#777);font-weight:700;line-height:1.4}
 .billing-new-item-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:9px;padding:13px 16px 16px;border-top:1px solid var(--border,#ddd)}.billing-new-item-actions button{height:46px;border:0;border-radius:12px;font-size:13px;font-weight:900}.billing-new-item-cancel{background:var(--surface2,#f1f3f5);color:var(--text,#222)}.billing-new-item-save{background:#16a34a;color:#fff}.billing-new-item-actions button:active{transform:scale(.98)}
 @media(max-width:430px){.billing-new-item-modal{padding:10px;align-items:flex-end}.billing-new-item-card{width:100%;border-radius:20px 20px 16px 16px}.billing-new-item-head{padding:14px}.billing-new-item-body{padding:14px}.billing-new-item-actions{padding:12px 14px 14px}}
+
 </style>
 
 <style>
@@ -696,9 +698,9 @@ body.modal-front-open{overflow:hidden!important}
         <button class="btn btn-op" onclick="handlePress('+')">+</button>
 
         <button class="btn btn-num" onclick="handlePress('0')">0</button>
-        <button class="btn btn-num calculator-58mm-print-btn" onclick="printCurrentPayment()" aria-label="Print 58mm invoice" title="Print 58mm invoice">🖨️<span>58mm</span></button>
+        <button class="btn btn-num calculator-58mm-print-btn" id="calculator-58mm-print-btn" onclick="printCurrentPayment()" aria-label="Print 58mm invoice" title="Print 58mm invoice">🖨️<span>58mm</span></button>
         <button class="btn btn-num" onclick="handlePress('DEL')">⌫</button>
-        <button class="btn btn-eq" onclick="handlePress('=')">=</button>
+        <button class="btn btn-eq" id="calculator-eq-btn" onclick="handlePress('=')" aria-label="Calculate and save to history" title="Calculate and save to history">=</button>
         
     </div>
 
@@ -1241,10 +1243,34 @@ function toggleTheme(){
         updateRecycleCount(src); renderRecycleBin(src);
     }
 
-        function saveHistoryItem(){
+        let calculatorSaveFeedbackTimer = null;
+    function showCalculatorSaveFeedback(saved){
+        const btn=document.getElementById("calculator-eq-btn");
+        if(!btn)return;
+        clearTimeout(calculatorSaveFeedbackTimer);
+        btn.classList.remove("save-success");
+        if(saved){
+            btn.classList.add("save-success");
+            btn.innerHTML='✓ <span style="font-size:13px;font-weight:900;vertical-align:2px">Saved</span>';
+            btn.setAttribute("aria-label","Saved to calculator history");
+            btn.setAttribute("title","Saved to Calculator History");
+            calculatorSaveFeedbackTimer=setTimeout(()=>{
+                btn.classList.remove("save-success");
+                btn.textContent="=";
+                btn.setAttribute("aria-label","Calculate and save to history");
+                btn.setAttribute("title","Calculate and save to history");
+            },1400);
+        }else{
+            btn.textContent="=";
+            btn.setAttribute("aria-label","Calculate and save to history");
+            btn.setAttribute("title","Calculate and save to history");
+        }
+    }
+
+    function saveHistoryItem(){
         const amount = parseFloat(displayRes.innerText) || parseFloat(expr) || 0;
         const upi = upiInput.value.trim() || "Q396201235@ybl";
-        if (!isFinite(amount) || amount <= 0) return;
+        if (!isFinite(amount) || amount <= 0) { showCalculatorSaveFeedback(false); return false; }
 
         const item = {
             id: Date.now(),
@@ -1257,8 +1283,9 @@ function toggleTheme(){
         const duplicate = history[0] && history[0].amount === item.amount && history[0].upi === item.upi && history[0].expression === item.expression && (Date.now() - new Date(history[0].time).getTime()) < 10000;
         if(!duplicate) history.unshift(item);
         localStorage.setItem(CALCULATOR_HISTORY_KEY, JSON.stringify(history.slice(0, 50)));
+        showCalculatorSaveFeedback(true);
+        return true;
     }
-
     function setSalesDateToday(){ setSalesRange(1); }
     function setSalesRange(range){
         const input=document.getElementById('sales-date');
@@ -2346,12 +2373,38 @@ function saveCurrentBill(){
     }else setPrinterStatus('Calculator Invoice was not saved. Check the amount.','error');
   }catch(err){setPrinterStatus('Save failed: '+(err.message||err),'error');}
 }
+let calculatorPrintFeedbackTimer=null;
+function setCalculatorPrintFeedback(state){
+  const btn=document.getElementById("calculator-58mm-print-btn");
+  if(!btn)return;
+  clearTimeout(calculatorPrintFeedbackTimer);
+  btn.classList.remove("print-success","print-busy");
+  btn.innerHTML='🖨️<span>58mm</span>';
+  btn.disabled=false;
+  btn.setAttribute("aria-label","Print 58mm invoice");
+  btn.setAttribute("title","Print 58mm invoice");
+  if(state==='busy'){
+    btn.classList.add("print-busy");
+    btn.innerHTML='⏳<span>Printing…</span>';
+    btn.disabled=true;
+    btn.setAttribute("aria-label","Printing 58mm invoice");
+    btn.setAttribute("title","Printing 58mm invoice");
+  }else if(state==='success'){
+    btn.classList.add("print-success");
+    btn.innerHTML='✓<span>Printed</span>';
+    btn.setAttribute("aria-label","58mm invoice printed successfully");
+    btn.setAttribute("title","Printed successfully");
+    calculatorPrintFeedbackTimer=setTimeout(()=>setCalculatorPrintFeedback('normal'),1400);
+  }
+}
+
 async function printCurrentPayment(){
+  setCalculatorPrintFeedback('busy');
   const amount=getCurrentCalculatorAmount();
-  if(!isFinite(amount)||amount<=0){setPrinterStatus("Enter a payment amount first","error");return;}
+  if(!isFinite(amount)||amount<=0){setCalculatorPrintFeedback("normal");setPrinterStatus("Enter a payment amount first","error");return;}
   const printUpi=upiInput.value.trim()||"Q396201235@ybl";
-  if(!isValidUpiId(printUpi)){setPrinterStatus("Enter a valid UPI ID first","error");return;}
-  if(!printerReady()){openPrinterPanel();setPrinterStatus("Connect a printer first","error");return;}
+  if(!isValidUpiId(printUpi)){setCalculatorPrintFeedback("normal");setPrinterStatus("Enter a valid UPI ID first","error");return;}
+  if(!printerReady()){setCalculatorPrintFeedback("normal");openPrinterPanel();setPrinterStatus("Connect a printer first","error");return;}
   try{
     // One-tap print uses the same designed 58mm invoice layout as the invoice panel.
     upiInput.value=printUpi;
@@ -2377,13 +2430,14 @@ async function printCurrentPayment(){
     setPrinterStatus("Printing invoice…");
     await writeBluetooth(makeCustomizedReceiptBytes(x));
     setPrinterStatus("Printed successfully","connected");
+    setCalculatorPrintFeedback("success");
     // Physical print and history use ONE save path. A second callback/path cannot
     // create another Calculator History record for the same print operation.
     const printToken=beginInvoiceHistorySave('calculator',bill,null);
     saveInvoiceHistoryOnce('calculator',printToken,()=>saveCalculatorInvoiceHistory({editingHistoryId:null,bill,upi:printUpi,shop:document.getElementById('invoice-shop').textContent,title:document.getElementById('invoice-title').textContent,discount,displaySettings:getInvoiceDisplaySettings('calculator')}));
     saveInvoiceSettings('calculator');
     localStorage.removeItem(CAL_CURRENT_BILL_KEY);
-  }catch(err){setPrinterStatus("Print failed: "+(err.message||"Try reconnecting"),"error");}
+  }catch(err){setCalculatorPrintFeedback("normal");setPrinterStatus("Print failed: "+(err.message||"Try reconnecting"),"error");}
 }
 // ================================================================
 // SEPARATE INVOICE DATA STATE
@@ -5132,7 +5186,7 @@ if ('serviceWorker' in navigator) {
       const versionMeta={app:'UPI POS',format:'UPI-POS-CLOUD-BACKUP-V3',version:3,createdAt:new Date().toISOString(),sha256:checksum,localStorage:localPayload().localStorage};
       const versionPayload=JSON.stringify(versionMeta,null,2);
       const boundary='upiPosCloudBoundary'+Date.now();
-      const meta={name:BACKUP_NAME,mimeType:'application/json',parents:[folderId],description:JSON.stringify({sha256:checksum,createdAt:new Date().toISOString(),records:Object.keys(localPayload().localStorage).length})};
+      const meta=existing?{name:BACKUP_NAME,mimeType:'application/json',description:JSON.stringify({sha256:checksum,createdAt:new Date().toISOString(),records:Object.keys(localPayload().localStorage).length})}:{name:BACKUP_NAME,mimeType:'application/json',parents:[folderId],description:JSON.stringify({sha256:checksum,createdAt:new Date().toISOString(),records:Object.keys(localPayload().localStorage).length})};
       const body='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(meta)+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+payload+'\r\n--'+boundary+'--';
       const url=existing?'https://www.googleapis.com/upload/drive/v3/files/'+encodeURIComponent(existing.id)+'?uploadType=multipart&fields=id,name,modifiedTime':'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime';
       const res=await api(url,{method:existing?'PATCH':'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body});
