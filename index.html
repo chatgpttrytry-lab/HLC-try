@@ -5110,7 +5110,24 @@ if ('serviceWorker' in navigator) {
   }
   async function sha256(text){const b=new TextEncoder().encode(text);const h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('')}
   function saveSafetySnapshot(){try{localStorage.setItem(SAFETY_KEY,JSON.stringify({createdAt:new Date().toISOString(),localStorage:(()=>{const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&!k.startsWith('upi-pos-cloud-'))o[k]=localStorage.getItem(k)}return o})()}));return true}catch(e){return false}}
-  async function updateCloudInfo(){const e=$('cloudBackupInfo');if(!e)return;const q=load(QUEUE_KEY);let versions='—';try{const folder=load(FOLDER_KEY);if(folder&&accessToken){const r=await api('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent("name contains '"+VERSION_PREFIX+"' and trashed=false and '"+folderId+"' in parents")+'&spaces=drive&orderBy=modifiedTime desc&fields=files(id,name,modifiedTime,description)');versions=r.files?.length||0}}catch(_){}e.textContent='Integrity: SHA-256 ✓ | Versions: '+versions+' | Pending: '+(q?'Yes':'No')}
+  async function updateCloudInfo(){const e=$('cloudBackupInfo');if(!e)return;const q=load(QUEUE_KEY);let versions='—';try{const folderId=load(FOLDER_KEY);if(folderId&&accessToken){const r=await api('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent("name contains '"+VERSION_PREFIX+"' and trashed=false and '"+folderId+"' in parents")+'&spaces=drive&orderBy=modifiedTime desc&fields=files(id,name,modifiedTime,description)');versions=r.files?.length||0}}catch(_){}e.textContent='Integrity: SHA-256 ✓ | Versions: '+versions+' | Pending: '+(q?'Yes':'No')}
+  function cloudUpdateHealth(){
+    try{
+      const pending=hasPending();
+      const last=load(LAST_KEY);
+      const connected=!!accessToken;
+      const online=navigator.onLine;
+      const e=$('cloudBackupInfo');
+      if(e) e.textContent='Integrity: SHA-256 ✓ | Pending: '+(pending?'Yes':'No')+' | Online: '+(online?'Yes':'No');
+      if($('cloudLastBackup')) $('cloudLastBackup').textContent='Last backup: '+(last?new Date(last).toLocaleString():'Never');
+      const modal=$('cloudBackupModal');
+      if(modal && modal.classList.contains('show')){
+        if(pending && !connected) setStatus(online?'⏳ Backup pending — Connect Google to sync':'⏸️ Backup pending — waiting for internet','error');
+        else if(connected) setStatus('🟢 Google Account connected','connected');
+      }
+    }catch(e){ console.warn('Cloud health update failed:',e); }
+  }
+
   function showConnected(){
     $('cloudConnectedArea')?.classList.remove('cloud-hide');
     $('cloudConnectBtn')?.classList.add('cloud-hide');
