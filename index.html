@@ -5005,12 +5005,23 @@ if ('serviceWorker' in navigator) {
         </div>
         <label class="cloud-row"><span>Auto backup<br><span class="cloud-small">When app is active</span></span><input id="cloudAutoBackup" type="checkbox" onchange="cloudSetAutoBackup(this.checked)"></label>
         <div id="cloudLastBackup" class="cloud-note">Last backup: Never</div>
+        <div class="cloud-grid">
+          <button class="cloud-btn" type="button" onclick="cloudBackupHistory()">🕘 Backup History</button>
+          <button class="cloud-btn" type="button" onclick="cloudRestoreSelected()">🛡️ Restore Version</button>
+        </div>
+        <div id="cloudBackupInfo" class="cloud-note">Integrity: — | Versions: — | Pending: —</div>
         <button class="cloud-btn danger" type="button" onclick="cloudDisconnect()">Disconnect Google Account</button>
       </div>
-      <div class="cloud-note">Backup includes the POS app's saved localStorage data: items, calculator/billing histories, settings and other saved app data. Your existing Local Backup / Restore remains separate.</div>
+      <div class="cloud-note">Backup includes the POS app's saved localStorage data: items, calculator/billing histories, settings and other saved app data. Your existing Local Backup / Restore remains separate.<div id="cloudAdvancedDashboard" class="cloud-note" style="margin-top:10px;padding:12px;border:1px solid #ddd;border-radius:12px"><b>🩺 Backup Health</b><br><span id="cloudHealth">Checking…</span><br><span id="cloudNextBackup">Next Auto Backup: —</span><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="cloud-btn" type="button" onclick="cloudOpenHistoryWindow()">📋 Full Backup History</button><button class="cloud-btn" type="button" onclick="cloudSafetyRestore()">↩️ Rollback Safety Backup</button></div></div>
+</div>
     </div>
   </div>
 </div>
+
+<style id='cloud-history-ui'>
+#cloudHistoryModal{position:fixed;inset:0;z-index:100600;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:10px}#cloudHistoryModal.open{display:flex}.cloud-history-box{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:16px;padding:14px;box-sizing:border-box}.cloud-history-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.cloud-history-card{border:1px solid #ddd;border-radius:12px;padding:10px;margin:8px 0;display:flex;justify-content:space-between;gap:8px;align-items:center}.cloud-history-meta{font-size:12px;color:#666}.cloud-history-actions{display:flex;gap:6px;flex-wrap:wrap}.cloud-history-actions button{padding:8px 10px;border-radius:8px;border:1px solid #ccc;background:#fff}
+</style>
+<div id='cloudHistoryModal' aria-hidden='true'><div class='cloud-history-box'><div class='cloud-history-head'><b>🕘 Cloud Backup History</b><button type='button' onclick='cloudCloseHistoryWindow()'>✕</button></div><div id='cloudHistoryList'>Loading…</div></div></div>
 <script id="separate-cloud-backup-branch">
 (function(){
   'use strict';
@@ -5022,6 +5033,9 @@ if ('serviceWorker' in navigator) {
   const QUEUE_KEY='upi-pos-cloud-pending-sync';
   const FOLDER_NAME='UPI POS Cloud Backup';
   const BACKUP_NAME='UPI_POS_CLOUD_BACKUP.json';
+  const VERSION_PREFIX='UPI_POS_BACKUP_';
+  const VERSION_KEEP=10;
+  const SAFETY_KEY='upi-pos-cloud-pre-restore-safety';
   const SCOPE='https://www.googleapis.com/auth/drive.file';
   let tokenClient=null, accessToken='', tokenReady=null, pendingAction=null, uploadRunning=false, reconnectTimer=null;
 
@@ -5040,11 +5054,14 @@ if ('serviceWorker' in navigator) {
     }
     return {app:'UPI POS',format:'UPI-POS-CLOUD-BACKUP',version:2,createdAt:new Date().toISOString(),localStorage:local};
   }
+  async function sha256(text){const b=new TextEncoder().encode(text);const h=await crypto.subtle.digest('SHA-256',b);return Array.from(new Uint8Array(h)).map(x=>x.toString(16).padStart(2,'0')).join('')}
+  function saveSafetySnapshot(){try{localStorage.setItem(SAFETY_KEY,JSON.stringify({createdAt:new Date().toISOString(),localStorage:(()=>{const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&!k.startsWith('upi-pos-cloud-'))o[k]=localStorage.getItem(k)}return o})()}));return true}catch(e){return false}}
+  async function updateCloudInfo(){const e=$('cloudBackupInfo');if(!e)return;const q=load(QUEUE_KEY);let versions='—';try{const folder=load(FOLDER_KEY);if(folder&&accessToken){const r=await api('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent("name contains '"+VERSION_PREFIX+"' and trashed=false and '"+folderId+"' in parents")+'&spaces=drive&orderBy=modifiedTime desc&fields=files(id,name,modifiedTime,description)');versions=r.files?.length||0}}catch(_){}e.textContent='Integrity: SHA-256 ✓ | Versions: '+versions+' | Pending: '+(q?'Yes':'No')}
   function showConnected(){
     $('cloudConnectedArea')?.classList.remove('cloud-hide');
     $('cloudConnectBtn')?.classList.add('cloud-hide');
     const last=load(LAST_KEY); if($('cloudLastBackup')) $('cloudLastBackup').textContent='Last backup: '+(last?new Date(last).toLocaleString():'Never');
-    if($('cloudAutoBackup')) $('cloudAutoBackup').checked=load(AUTO_KEY)==='1';
+    if($('cloudAutoBackup')) $('cloudAutoBackup').checked=load(AUTO_KEY)==='1'; updateCloudInfo();
   }
   function showDisconnected(){
     $('cloudConnectedArea')?.classList.add('cloud-hide');
@@ -5076,10 +5093,8 @@ if ('serviceWorker' in navigator) {
   function requestSilentToken(){
     return new Promise((resolve,reject)=>{
       if(accessToken){resolve(accessToken);return}
-      const c=initTokenClient();
-      if(!c){reject(new Error('Google Identity Services is not ready.'));return}
-      tokenReady={resolve,reject};
-      try{c.requestAccessToken({prompt:''});}catch(e){tokenReady=null;reject(e)}
+      // Never start OAuth from background/API calls. User must explicitly connect.
+      reject(new Error('Google account is not connected. Open Cloud Backup and tap Connect Google.'));
     });
   }
   function getToken(){return requestSilentToken()}
@@ -5111,22 +5126,35 @@ if ('serviceWorker' in navigator) {
       const folderId=await ensureFolder();
       const existing=await findBackup(folderId);
       const payload=JSON.stringify(localPayload(),null,2);
+      const checksum=await sha256(JSON.stringify(localPayload().localStorage,null,2));
+      const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+      const versionName=VERSION_PREFIX+stamp+'.json';
+      const versionMeta={app:'UPI POS',format:'UPI-POS-CLOUD-BACKUP-V3',version:3,createdAt:new Date().toISOString(),sha256:checksum,localStorage:localPayload().localStorage};
+      const versionPayload=JSON.stringify(versionMeta,null,2);
       const boundary='upiPosCloudBoundary'+Date.now();
-      // Drive API: parents may be supplied when creating a file, but not as a
-      // writable field in an update/PATCH request. Existing backups stay in
-      // their current folder; only new backups receive the folder parent.
-      const meta=existing
-        ? {name:BACKUP_NAME,mimeType:'application/json'}
-        : {name:BACKUP_NAME,mimeType:'application/json',parents:[folderId]};
+      const meta={name:BACKUP_NAME,mimeType:'application/json',parents:[folderId],description:JSON.stringify({sha256:checksum,createdAt:new Date().toISOString(),records:Object.keys(localPayload().localStorage).length})};
       const body='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(meta)+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+payload+'\r\n--'+boundary+'--';
       const url=existing?'https://www.googleapis.com/upload/drive/v3/files/'+encodeURIComponent(existing.id)+'?uploadType=multipart&fields=id,name,modifiedTime':'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime';
       const res=await api(url,{method:existing?'PATCH':'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body});
-      if(!res?.id) throw new Error('Google Drive did not return a backup file ID.');
-      save(FILE_KEY,res.id);save(LAST_KEY,new Date().toISOString());clearPending();
-      setStatus('✅ Cloud backup saved','connected');showConnected();
+      save(FILE_KEY,res.id);
+      // Keep an immutable timestamped version for rollback/history.
+      const vb='upiPosVersionBoundary'+Date.now();
+      const vm={name:versionName,mimeType:'application/json',parents:[folderId],description:JSON.stringify({sha256:checksum,createdAt:new Date().toISOString()})};
+      const vbdy='--'+vb+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(vm)+'\r\n--'+vb+'\r\nContent-Type: application/json\r\n\r\n'+versionPayload+'\r\n--'+vb+'--';
+      await api('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+vb},body:vbdy});
+      save(LAST_KEY,new Date().toISOString());clearPending();
+      setStatus('✅ Cloud backup saved + version created','connected');showConnected();cloudUpdateHealth();await cloudTrimVersions();
       return res;
     }finally{uploadRunning=false}
   }
+
+  function cloudOpenHistoryWindow(){const m=document.getElementById('cloudHistoryModal');if(m){m.classList.add('open');m.setAttribute('aria-hidden','false')}cloudRenderHistory()}
+  function cloudCloseHistoryWindow(){const m=document.getElementById('cloudHistoryModal');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true')}}
+  async function cloudRenderHistory(){try{const folderId=await ensureFolder();const r=await api('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent("name contains '"+VERSION_PREFIX+"' and trashed=false and '"+folderId+"' in parents")+'&spaces=drive&orderBy=modifiedTime desc&fields=files(id,name,modifiedTime,size,description)');const a=(r.files||[]).slice(0,VERSION_KEEP);const box=document.getElementById('cloudHistoryList');if(!box)return;if(!a.length){box.innerHTML='<div class=\"cloud-note\">No backup versions found yet.</div>';return}box.innerHTML=a.map((f,i)=>'<div class=\"cloud-history-card\"><div><b>'+(i+1)+'. '+f.name.replace(VERSION_PREFIX,'').replace('.json','')+'</b><div class=\"cloud-history-meta\">'+new Date(f.modifiedTime).toLocaleString()+' · '+(f.size?Math.round(Number(f.size)/1024)+' KB':'size unknown')+'</div></div><div class=\"cloud-history-actions\"><button type=\"button\" onclick=\"cloudRestoreById(\''+f.id+'\')\">↩️ Restore</button><button type=\"button\" onclick=\"cloudDeleteVersion(\''+f.id+'\')\">🗑️ Delete</button></div></div>').join('')}catch(e){const box=document.getElementById('cloudHistoryList');if(box)box.textContent='Could not load history: '+e.message}}
+  async function cloudRestoreById(id){try{const f=await api('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(id)+'?fields=id,name,description');const data=await api('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(id)+'?alt=media');if(!data?.localStorage)throw new Error('Invalid backup version.');if(data.sha256&&data.sha256!==await sha256(JSON.stringify(data.localStorage,null,2)))throw new Error('Integrity check failed.');if(!confirm('Restore this backup? Current data will be saved as a safety backup first.'))return;saveSafetySnapshot();Object.keys(data.localStorage).forEach(k=>localStorage.setItem(k,String(data.localStorage[k]??'')));Object.keys(localStorage).forEach(k=>{if(!(k in data.localStorage)&&!k.startsWith('upi-pos-cloud-'))localStorage.removeItem(k)});clearPending();location.reload()}catch(e){alert('Restore failed: '+e.message)}}
+  async function cloudDeleteVersion(id){if(!confirm('Delete this cloud backup version?'))return;try{await api('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(id),{method:'DELETE'});cloudRenderHistory();await updateCloudInfo()}catch(e){alert('Delete failed: '+e.message)}}
+  async function cloudBackupHistory(){try{await cloudRenderHistory();const m=document.getElementById('cloudHistoryModal');if(m){m.classList.add('open');m.setAttribute('aria-hidden','false')}}catch(e){alert('Could not load backup history: '+e.message)}}
+  async function cloudRestoreSelected(){try{const folderId=await ensureFolder();const r=await api('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent("name contains '"+VERSION_PREFIX+"' and trashed=false and '"+folderId+"' in parents")+'&spaces=drive&orderBy=modifiedTime desc&fields=files(id,name,modifiedTime)');const a=r.files||[];if(!a.length){alert('No backup versions found yet.');return}const list=a.slice(0,VERSION_KEEP).map((f,i)=>(i+1)+'. '+f.name.replace(VERSION_PREFIX,'').replace('.json','')).join('\n');const pick=prompt('Choose backup version number:\n\n'+list);const n=Number(pick);if(!n||!a[n-1])return;const f=a[n-1];const data=await api('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(f.id)+'?alt=media');if(!data?.localStorage)throw new Error('Invalid backup version.');if(data.sha256 && data.sha256!==await sha256(JSON.stringify(data.localStorage,null,2)))throw new Error('Integrity check failed.');if(!confirm('Restore this backup version? A safety copy of current data will be created first.'))return;saveSafetySnapshot();Object.keys(data.localStorage).forEach(k=>localStorage.setItem(k,String(data.localStorage[k]??'')));Object.keys(localStorage).forEach(k=>{if(!(k in data.localStorage)&&!k.startsWith('upi-pos-cloud-'))localStorage.removeItem(k)});clearPending();setStatus('✅ Selected backup restored — reloading…','connected');setTimeout(()=>location.reload(),500);}catch(e){alert('Version restore failed: '+e.message)}}
   async function syncPendingBackup(){
     if(load(AUTO_KEY)!=='1' || !hasPending() || !navigator.onLine)return false;
     try{await uploadBackup();return true}catch(e){
@@ -5140,7 +5168,9 @@ if ('serviceWorker' in navigator) {
     setStatus('⏳ Downloading latest backup…');
     const data=await api('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(f.id)+'?alt=media');
     if(!data?.localStorage)throw new Error('Invalid UPI POS cloud backup.');
-    if(!confirm('Restore the latest Google Drive backup? Current saved POS data will be replaced.'))return;
+    if(f.description){try{const meta=JSON.parse(f.description);if(meta.sha256 && meta.sha256!==await sha256(JSON.stringify(data.localStorage,null,2)))throw new Error('Latest backup integrity check failed.')}catch(e){if(String(e.message).includes('integrity'))throw e;}}
+    if(!confirm('Restore the latest Google Drive backup? A safety copy of current data will be created first.'))return;
+    saveSafetySnapshot();
     const nativeSet=Storage.prototype.setItem,nativeRemove=Storage.prototype.removeItem;
     Object.keys(data.localStorage).forEach(k=>nativeSet.call(localStorage,k,String(data.localStorage[k]??'')));
     Object.keys(localStorage).forEach(k=>{if(!(k in data.localStorage) && ![CLIENT_KEY,AUTO_KEY,LAST_KEY,FOLDER_KEY,FILE_KEY,QUEUE_KEY].includes(k))nativeRemove.call(localStorage,k)});
@@ -5148,17 +5178,13 @@ if ('serviceWorker' in navigator) {
     setTimeout(()=>location.reload(),500);
   }
   function scheduleReconnect(){
-    if(load(AUTO_KEY)!=='1' || !load(CLIENT_KEY) || !navigator.onLine)return;
-    if(accessToken)return;
+    // Silent reconnect is intentionally disabled. Bill saving/auto backup must
+    // never open a Google account/email/permission window automatically.
+    if(load(AUTO_KEY)!=='1' || !load(CLIENT_KEY) || !navigator.onLine || accessToken)return;
     clearTimeout(reconnectTimer);
     reconnectTimer=setTimeout(()=>{
-      try{
-        initTokenClient();
-        if(tokenClient){
-          pendingAction=()=>{ if(hasPending()) syncPendingBackup(); };
-          tokenClient.requestAccessToken({prompt:''});
-        }
-      }catch(_){ }
+      if(accessToken && hasPending()) syncPendingBackup();
+      else if(hasPending()) setStatus('⏳ Cloud Backup pending — open Cloud Backup and connect Google to sync','error');
     },700);
   }
   window.openCloudBackupWindow=function(){
@@ -5181,17 +5207,36 @@ if ('serviceWorker' in navigator) {
   window.cloudSetAutoBackup=function(on){save(AUTO_KEY,on?'1':'0');if(on){scheduleReconnect();if(navigator.onLine && accessToken)syncPendingBackup();else if(!navigator.onLine)setStatus('⏸️ Auto Backup ON — waiting for internet','error')}};
   window.cloudBackupAfterSale=function(source){
     if(load(AUTO_KEY)!=='1' || !load(CLIENT_KEY))return;
+    // IMPORTANT: Saving a bill must NEVER open Google account/email permission UI.
+    // Queue the sale silently. If Google is already connected, sync immediately;
+    // otherwise leave it pending for the user to sync from Cloud Backup.
     markPending(source||'sale');
     if(!navigator.onLine){setStatus('⏸️ Sale saved locally — cloud sync queued for when online','error');return;}
-    if(accessToken)syncPendingBackup();else scheduleReconnect();
+    if(accessToken){
+      try{syncPendingBackup();}catch(_){ }
+    }else{
+      setStatus('⏳ Sale saved — Cloud Backup pending (Google login not opened)','error');
+    }
   };
-  window.cloudDisconnect=function(){accessToken='';tokenClient=null;pendingAction=null;clearTimeout(reconnectTimer);clearPending();save(FOLDER_KEY,'');save(FILE_KEY,'');showDisconnected();setStatus('⚪ Google account disconnected');};
+  window.cloudDisconnect=function(){accessToken='';tokenClient=null;pendingAction=null;clearTimeout(reconnectTimer);clearPending();save(FOLDER_KEY,'');save(FILE_KEY,'');showDisconnected();setStatus('⚪ Google account disconnected');cloudUpdateHealth();};
+  // Expose every cloud-history/health handler used by inline buttons.
+  window.cloudOpenHistoryWindow=cloudOpenHistoryWindow;
+  window.cloudCloseHistoryWindow=cloudCloseHistoryWindow;
+  window.cloudBackupHistory=cloudBackupHistory;
+  window.cloudRestoreSelected=cloudRestoreSelected;
+  window.cloudRestoreById=cloudRestoreById;
+  window.cloudDeleteVersion=cloudDeleteVersion;
+  window.cloudSafetyRestore=cloudSafetyRestore;
+
   document.addEventListener('keydown',e=>{if(e.key==='Escape')window.closeCloudBackupWindow()});
   document.addEventListener('click',e=>{const m=$('cloudBackupModal');if(m&&e.target===m)window.closeCloudBackupWindow()});
   function autoBackup(){
     if(load(AUTO_KEY)!=='1'||!load(CLIENT_KEY))return;
     if(!navigator.onLine){if(hasPending())setStatus('⏸️ Cloud sync pending — offline','error');return;}
-    if(hasPending()){if(accessToken)syncPendingBackup();else scheduleReconnect();}
+    if(hasPending()){
+      if(accessToken)syncPendingBackup();
+      else setStatus('⏳ Cloud Backup pending — Google connection required for sync','error');
+    }
   }
   window.addEventListener('online',()=>{if(load(AUTO_KEY)==='1'){setStatus('🌐 Internet restored — syncing…','connected');scheduleReconnect();if(accessToken)syncPendingBackup()}});
   window.addEventListener('offline',()=>{if(load(AUTO_KEY)==='1')setStatus('⏸️ Offline — cloud sync queued','error')});
@@ -5200,7 +5245,8 @@ if ('serviceWorker' in navigator) {
     if(load(AUTO_KEY)==='1')scheduleReconnect();
   });
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')autoBackup()});
-  setInterval(autoBackup,5*60*1000);
+  setInterval(()=>{autoBackup();cloudUpdateHealth()},5*60*1000);
+  setTimeout(cloudUpdateHealth,500);
 })();
 </script>
 </body>
